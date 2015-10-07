@@ -1,0 +1,36 @@
+float temp;                   //where the final temperature data is stored
+
+void setup()
+{
+  Serial.begin(38400);        // Initialize USB to computer
+  pinMode(D2, OUTPUT);        //
+  pinMode(A0, INPUT_PULLUP);  // INPUT_PULLUP is a bit clearer than the
+                              // Arduino way with digitalWrite() on an INPUT to
+                              // attach/detach an internal pull-up resistor
+}
+
+void loop() {
+  temp = read_temp();
+  Serial.println(temp);       // print to USB serial
+  delay(1000);
+}
+
+float read_temp(void){          //the read temperature function
+  float v_out;                  //voltage output from temp sensor in mV
+  float temp;                   //the final temperature is stored here
+  digitalWrite(D2, HIGH);       // power up the sensor (but only 3.3V on the Photon)
+  delay(2);
+  v_out = analogRead(A0);       // get the voltage reading
+  digitalWrite(D2, LOW);        // power off again
+
+  // V = analogRead(analogPin) * (3.3 / 4095);
+  //   = analogRead(analogPin) * 0.00081;
+  // where: analogPin is any analog input pin (A0 - A7)
+  //  3.3 represents the maximum input voltage on any analog input pin
+  //  4095 is the max decimal value of a 12-bit analog-to-digital (ADC) converter
+
+  v_out *= 3300.0 / 4095.0;     // V only in mV already
+  temp= 0.0512 * v_out - 20.5128;
+  return temp;
+}
+
