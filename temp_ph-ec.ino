@@ -45,11 +45,11 @@ void setup()  // run once on power on.
                               // attach/detach an internal pull-up resistor
 
   openChannel(chEC);
-  Serial1.print("C,1\r");
-  //Serial1.println("O,SG,0");  //disable the specific gravity
-  //Serial1.println("O,S,0");   //disable the salinity.
+  Serial1.print("C,1" + '\r');
+//  Serial1.print("O,SG,0" + '\r');  //disable the specific gravity
+//  Serial1.println("O,S,0" + '\r');   //disable the salinity.
   openChannel(chpH);
-  Serial1.print("C,1\r");       // C,1<CR> Continuous mode enabled
+  Serial1.print("C,1" + '\r');       // C,1<CR> Continuous mode enabled
 
 //  Particle.function("phCommand", sendpHCommand); //register Particle cloud function
 //  Particle.function("ecCommand", sendECCommand); //register Particle cloud function
@@ -65,9 +65,10 @@ void loop() {
   Serial.println(temp);       // print to serial
   delay(1000);
 
-//  ec = getEC();
-//  Serial.print("EC: ");
-//  Serial.println(ec);
+  ec = getEC();
+  Serial.print("EC: ");
+  Serial.println(ec);
+
   delay(1000);
   ph = getpH();
   Serial.print("pH: ");
@@ -91,13 +92,13 @@ float getTemp(void){          //the read temperature function
 void openChannel(int channel) {
   switch (channel) {                 // Looking to see what channel to open
     case 0:                          // If channel==0 then we open channel 0
-      Serial.println("EC Channel");
+//      Serial.println("EC Channel");
       digitalWrite(s0, LOW);         // S0 and S1 control what channel opens
       digitalWrite(s1, LOW);         // S0 and S1 control what channel opens
       Serial1.begin(baudrateCh0);	   // reset serial to baudrate defined for this channel
       break;                         // Exit switch case
     case 1:
-      Serial.println("pH Channel");
+//      Serial.println("pH Channel");
       digitalWrite(s0, HIGH);
       digitalWrite(s1, LOW);
       Serial1.begin(baudrateCh1);
@@ -111,13 +112,9 @@ double getEC(void) {
   char *TDS;
   char *SAL;
   char *GRAV;
+  double d_ec = 0.0;
+
   openChannel(chEC);
-  if (input_string_complete) {
-    Serial1.print(inputstring);
-    Serial1.print('\r');
-    inputstring = "";
-    input_string_complete = false;
-  }
   if (Serial1.available() > 0) {
     char inchar = (char)Serial1.read();
     sensorstring += inchar;
@@ -125,40 +122,62 @@ double getEC(void) {
       sensor_string_complete = true;
     }
   }
-    if (sensor_string_complete == true) {
-      if (isdigit(sensorstring[0]) == false) {
-        Serial.println(sensorstring);
-      }
-      else {
-          sensorstring.toCharArray(sensorstring_array, 30);
-          EC = strtok(sensorstring_array, ",");
-          TDS = strtok(NULL, ",");
-          SAL = strtok(NULL, ",");
-          GRAV = strtok(NULL, ",");
-        }
-      sensorstring = "";
-      sensor_string_complete = false;
+
+  if (sensor_string_complete == true) {
+    if (isdigit(sensorstring[0]) == false) {
+      Serial.println(sensorstring);
     }
+    else {
+      sensorstring.toCharArray(sensorstring_array, 30);
+      EC = strtok(sensorstring_array, ",");
+      TDS = strtok(NULL, ",");
+      SAL = strtok(NULL, ",");
+      GRAV = strtok(NULL, ",");
+      d_ec= atof(EC);
+    }
+    sensorstring = "";
+    sensor_string_complete = false;
   }
-  return 
+  return d_ec;
 }
 
 double getTDS(void) {
   char sensorstring_array[30];
   char *EC;
   char *TDS;
+  char *SAL;
+  char *GRAV;
   double d_tds = 0.0;
+
   openChannel(chEC);
-  sensorstring.toCharArray(sensorstring_array, 30);
-  EC = strtok(sensorstring_array, ",");
-  TDS = strtok(sensorstring_array, ",");
-  d_tds = strtod(TDS, NULL);
+  if (Serial1.available() > 0) {
+    char inchar = (char)Serial1.read();
+    sensorstring += inchar;
+    if (inchar == '\r') {
+      sensor_string_complete = true;
+    }
+  }
+
+  if (sensor_string_complete == true) {
+    if (isdigit(sensorstring[0]) == false) {
+      Serial.println(sensorstring);
+    }
+    else {
+      sensorstring.toCharArray(sensorstring_array, 30);
+      EC = strtok(NULL, ",");
+      TDS = strtok(sensorstring_array, ",");
+      SAL = strtok(NULL, ",");
+      GRAV = strtok(NULL, ",");
+      d_tds= atof(EC);
+    }
+    sensorstring = "";
+    sensor_string_complete = false;
+  }
   return d_tds;
 }
 
 double getpH(void) {
   openChannel(chpH);
-  //  Serial1.print("status\r");
     if (Serial1.available() > 0) {
   //      Serial.println("pH available");
       char inchar = (char)Serial1.read();
@@ -166,7 +185,7 @@ double getpH(void) {
       if (inchar == '\r') {
         sensor_string_complete = true;
       }
-      if (sensor_string_complete== true) {
+      if (sensor_string_complete == true) {
   //        Serial.println(sensorstring);
         if (isdigit(sensorstring[0])) {
           pH_reading = true;
